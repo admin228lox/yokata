@@ -1,115 +1,161 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Yokata Spotify</title>
-  <style>
-    body {
-      background: #111;
-      color: #fff;
-      font-family: Arial, sans-serif;
-      padding: 20px;
-    }
-    h1 { text-align: center; }
-    input {
-      width: 70%;
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-      outline: none;
-    }
-    button {
-      padding: 10px 15px;
-      border: none;
-      border-radius: 8px;
-      background: #1db954;
-      color: white;
-      cursor: pointer;
-      margin-left: 5px;
-    }
-    .results { margin-top: 20px; }
-    .track {
-      background: #222;
-      margin: 10px 0;
-      padding: 12px;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-    .track:hover { background: #333; }
-    iframe {
-      width: 100%;
-      height: 160px;
-      border-radius: 10px;
-      margin-top: 20px;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yokata Player</title>
+<style>
+  body {
+    background: #111;
+    color: #fff;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+  }
+  h1 { text-align: center; }
+  input {
+    width: 70%;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    outline: none;
+  }
+  button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 8px;
+    background: #1db954;
+    color: white;
+    cursor: pointer;
+    margin-left: 5px;
+  }
+  .results { margin-top: 20px; }
+  .track {
+    background: #222;
+    margin: 10px 0;
+    padding: 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .track:hover { background: #333; }
+  .track-info {
+    display: flex;
+    flex-direction: column;
+  }
+  .track img {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    margin-right: 10px;
+  }
+  .player-controls {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+  iframe {
+    width: 100%;
+    height: 160px;
+    border-radius: 10px;
+    margin-top: 20px;
+  }
+</style>
 </head>
 <body>
-  <h1>🎵 Yokata Spotify</h1>
-  <div>
-    <input id="search" placeholder="Введите название трека...">
-    <button onclick="searchTracks()">Поиск</button>
-  </div>
-  <div class="results" id="results"></div>
-  <div id="player"></div>
+<h1>🎵 Yokata Player</h1>
+<div>
+  <input id="search" placeholder="Введите название трека...">
+  <button onclick="searchTracks()">Поиск</button>
+</div>
+<div class="results" id="results"></div>
+<div id="player"></div>
+<div class="player-controls">
+  <button id="prevBtn">⏮</button>
+  <button id="playBtn">⏯</button>
+  <button id="nextBtn">⏭</button>
+</div>
 
-  <script>
-    const clientId = "7aa95becdffa44d7a79bcc5e7c933450";
-    const clientSecret = "89194904474847c08fee37b8c3615689";
+<script>
+const clientId = "7aa95becdffa44d7a79bcc5e7c933450";
+const clientSecret = "89194904474847c08fee37b8c3615689";
 
-    async function getToken() {
-      const result = await fetch("https://accounts.spotify.com/api/token", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          "Authorization": "Basic " + btoa(clientId + ":" + clientSecret)
-        },
-        body: "grant_type=client_credentials"
-      });
-      const data = await result.json();
-      return data.access_token;
-    }
+let playlist = [];
+let current = 0;
 
-    async function searchTracks() {
-      const query = document.getElementById("search").value;
-      if (!query) return;
+async function getToken() {
+  const result = await fetch("https://accounts.spotify.com/api/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Authorization": "Basic " + btoa(clientId + ":" + clientSecret)
+    },
+    body: "grant_type=client_credentials"
+  });
+  const data = await result.json();
+  return data.access_token;
+}
 
-      const token = await getToken();
-      const result = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=5`, {
-        method: "GET",
-        headers: { "Authorization": "Bearer " + token }
-      });
-      const data = await result.json();
+async function searchTracks() {
+  const query = document.getElementById("search").value;
+  if (!query) return;
 
-      const resultsDiv = document.getElementById("results");
-      resultsDiv.innerHTML = "";
+  const token = await getToken();
+  const result = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=5`, {
+    method: "GET",
+    headers: { "Authorization": "Bearer " + token }
+  });
+  const data = await result.json();
 
-      if (!data.tracks.items.length) {
-        resultsDiv.innerHTML = "<p>❌ Треки не найдены</p>";
-        return;
-      }
+  const resultsDiv = document.getElementById("results");
+  resultsDiv.innerHTML = "";
 
-      data.tracks.items.forEach(track => {
-        const div = document.createElement("div");
-        div.className = "track";
-        div.innerText = `${track.artists[0].name} - ${track.name}`;
-        div.onclick = () => playTrack(track.uri);
-        resultsDiv.appendChild(div);
-      });
-    }
+  if (!data.tracks.items.length) {
+    resultsDiv.innerHTML = "<p>❌ Треки не найдены</p>";
+    return;
+  }
 
-    function playTrack(uri) {
-      const playerDiv = document.getElementById("player");
-      playerDiv.innerHTML = `
-        <iframe style="border-radius:12px"
-          src="https://open.spotify.com/embed/track/${uri.split(":")[2]}?utm_source=generator&theme=0"
-          width="100%" height="152" frameBorder="0" allowfullscreen=""
-          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy">
-        </iframe>
-      `;
-    }
-  </script>
+  playlist = data.tracks.items;
+  playlist.forEach((track, i) => {
+    const div = document.createElement("div");
+    div.className = "track";
+    div.innerHTML = `
+      <div class="track-info">
+        <strong>${track.artists[0].name}</strong> - ${track.name}
+      </div>
+    `;
+    div.onclick = () => playIndex(i);
+    resultsDiv.appendChild(div);
+  });
+
+  current = 0;
+  playIndex(current);
+}
+
+function playIndex(i){
+  if(i<0 || i>=playlist.length) return;
+  current = i;
+  const track = playlist[i];
+  const playerDiv = document.getElementById("player");
+  playerDiv.innerHTML = `
+    <iframe style="border-radius:12px"
+      src="https://open.spotify.com/embed/track/${track.uri.split(":")[2]}?utm_source=generator&theme=0"
+      width="100%" height="152" frameBorder="0" allowfullscreen=""
+      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy">
+    </iframe>
+  `;
+}
+
+function nextTrack(){ if(playlist.length===0) return; current=(current+1)%playlist.length; playIndex(current); }
+function prevTrack(){ if(playlist.length===0) return; current=(current-1+playlist.length)%playlist.length; playIndex(current); }
+
+document.getElementById('nextBtn').addEventListener('click', nextTrack);
+document.getElementById('prevBtn').addEventListener('click', prevTrack);
+document.getElementById('playBtn').addEventListener('click', ()=>{ /* Тут можно добавить паузу/плей через Spotify API */ });
+
+</script>
 </body>
 </html>
