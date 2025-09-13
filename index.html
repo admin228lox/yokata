@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dotify</title>
+  <title>Yokata Player</title>
   <style>
     body {
-      background: #111;
+      background: linear-gradient(135deg, #0f0f0f, #1e1e1e);
       color: #fff;
       font-family: Arial, sans-serif;
       display: flex;
@@ -22,13 +22,17 @@
       border-radius: 20px;
       text-align: center;
       box-shadow: 0 0 20px rgba(0,0,0,0.6);
+      width: 300px;
+    }
+    h2 {
+      margin-bottom: 15px;
     }
     button {
       background: #1db954;
       color: #fff;
       border: none;
       padding: 10px 20px;
-      margin: 10px;
+      margin: 5px;
       border-radius: 30px;
       cursor: pointer;
       font-size: 16px;
@@ -37,27 +41,67 @@
     button:hover {
       background: #17a74a;
     }
+    .track {
+      margin-top: 15px;
+      font-size: 14px;
+      color: #aaa;
+    }
   </style>
 </head>
 <body>
   <div class="player">
-    <h2>🎵 Моя волна</h2>
-    <audio id="audio" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"></audio>
+    <h2>🎵 Yokata Player</h2>
+    <audio id="audio" controls style="width:100%;">
+      Ваш браузер не поддерживает аудио.
+    </audio>
     <div>
+      <button onclick="prevTrack()">⏮ Prev</button>
       <button onclick="playAudio()">▶️ Play</button>
       <button onclick="pauseAudio()">⏸ Pause</button>
+      <button onclick="nextTrack()">⏭ Next</button>
     </div>
+    <div class="track" id="track-title">Загрузка...</div>
   </div>
 
   <script>
     const audio = document.getElementById("audio");
+    const trackTitle = document.getElementById("track-title");
+
+    const playlist = [
+      { title: "Track 1 - SoundHelix", src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
+      { title: "Track 2 - SoundHelix", src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
+      { title: "Track 3 - SoundHelix", src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" }
+    ];
+
+    let currentTrack = 0;
+
+    function loadTrack(index) {
+      audio.src = playlist[index].src;
+      trackTitle.textContent = playlist[index].title;
+    }
 
     function playAudio() {
       audio.play();
     }
+
     function pauseAudio() {
       audio.pause();
     }
+
+    function nextTrack() {
+      currentTrack = (currentTrack + 1) % playlist.length;
+      loadTrack(currentTrack);
+      playAudio();
+    }
+
+    function prevTrack() {
+      currentTrack = (currentTrack - 1 + playlist.length) % playlist.length;
+      loadTrack(currentTrack);
+      playAudio();
+    }
+
+    // Загружаем первый трек
+    loadTrack(currentTrack);
   </script>
 </body>
 </html>
