@@ -3,111 +3,91 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Yokata SoundCloud Player</title>
+  <title>Yokata SoundCloud</title>
   <style>
     body {
-      background: linear-gradient(135deg, #0f0f0f, #1e1e1e);
+      background: #111;
       color: #fff;
       font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
       padding: 20px;
-      min-height: 100vh;
-      margin: 0;
     }
-    h1 {
-      margin-bottom: 20px;
-    }
+    h1 { text-align: center; }
     input {
-      width: 80%;
+      width: 70%;
       padding: 10px;
-      font-size: 16px;
-      border-radius: 10px;
+      border-radius: 8px;
       border: none;
       outline: none;
-      margin-bottom: 20px;
     }
     button {
-      background: #1db954;
-      color: #fff;
+      padding: 10px 15px;
       border: none;
-      padding: 10px 20px;
-      margin-left: 10px;
-      border-radius: 30px;
+      border-radius: 8px;
+      background: #1db954;
+      color: white;
       cursor: pointer;
-      font-size: 16px;
-      transition: 0.3s;
+      margin-left: 5px;
     }
-    button:hover {
-      background: #17a74a;
-    }
-    .results {
-      width: 100%;
-      max-width: 600px;
-    }
+    .results { margin-top: 20px; }
     .track {
       background: #222;
       margin: 10px 0;
-      padding: 15px;
-      border-radius: 12px;
+      padding: 12px;
+      border-radius: 10px;
       cursor: pointer;
       transition: 0.3s;
     }
-    .track:hover {
-      background: #333;
-    }
+    .track:hover { background: #333; }
     iframe {
       width: 100%;
       height: 160px;
-      border: none;
+      border-radius: 10px;
       margin-top: 20px;
-      border-radius: 12px;
     }
   </style>
 </head>
 <body>
   <h1>🎵 Yokata SoundCloud</h1>
   <div>
-    <input id="search" type="text" placeholder="Поиск трека...">
-    <button onclick="searchTracks()">🔍</button>
+    <input id="search" placeholder="Введите название трека...">
+    <button onclick="searchTracks()">Поиск</button>
   </div>
   <div class="results" id="results"></div>
   <div id="player"></div>
 
   <script>
+    const client_id = "ВСТАВЬ_СВОЙ_CLIENT_ID"; // сюда вставляем ключ
+
     async function searchTracks() {
       const query = document.getElementById("search").value;
       if (!query) return;
 
-      const url = `https://soundcloud.com/search/sounds?q=${encodeURIComponent(query)}`;
-      const resultsDiv = document.getElementById("results");
-      resultsDiv.innerHTML = "<p>Ищем треки...</p>";
-
-      // 🔥 Парсим HTML SoundCloud через noembed (хакаем)
-      const res = await fetch(`https://noembed.com/embed?url=${url}`);
+      const url = `https://api-v2.soundcloud.com/search/tracks?q=${encodeURIComponent(query)}&client_id=${client_id}&limit=5`;
+      const res = await fetch(url);
       const data = await res.json();
 
-      // Проверка
-      if (!data || !data.title) {
+      const resultsDiv = document.getElementById("results");
+      resultsDiv.innerHTML = "";
+
+      if (!data.collection || data.collection.length === 0) {
         resultsDiv.innerHTML = "<p>❌ Треки не найдены</p>";
         return;
       }
 
-      // Покажем ссылку
-      resultsDiv.innerHTML = `
-        <div class="track" onclick="playTrack('${url}')">
-          ${data.title}
-        </div>
-      `;
+      data.collection.forEach(track => {
+        const div = document.createElement("div");
+        div.className = "track";
+        div.innerText = track.title;
+        div.onclick = () => playTrack(track.permalink_url);
+        resultsDiv.appendChild(div);
+      });
     }
 
     function playTrack(url) {
       const playerDiv = document.getElementById("player");
       playerDiv.innerHTML = `
         <iframe scrolling="no" frameborder="no" allow="autoplay"
-        src="https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%231db954&auto_play=true&hide_related=false&show_comments=false&show_user=true&show_reposts=false&show_teaser=false">
+        src="https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%231db954&auto_play=true">
         </iframe>
       `;
     }
