@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dotify</title>
+  <style>
+    body {
+      background: #111;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .player {
+      background: #222;
+      padding: 20px;
+      border-radius: 20px;
+      text-align: center;
+      box-shadow: 0 0 20px rgba(0,0,0,0.6);
+    }
+    button {
+      background: #1db954;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      margin: 10px;
+      border-radius: 30px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #17a74a;
+    }
+  </style>
+</head>
+<body>
+  <div class="player">
+    <h2>🎵 Моя волна</h2>
+    <audio id="audio" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"></audio>
+    <div>
+      <button onclick="playAudio()">▶️ Play</button>
+      <button onclick="pauseAudio()">⏸ Pause</button>
+    </div>
+  </div>
+
+  <script>
+    const audio = document.getElementById("audio");
+
+    function playAudio() {
+      audio.play();
+    }
+    function pauseAudio() {
+      audio.pause();
+    }
+  </script>
+</body>
+</html>
