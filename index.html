@@ -1,296 +1,63 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Yokata — YouTube Music Player</title>
-  <meta name="description" content="Yokata — search & play music (YouTube) with hidden video, custom controls" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dotify</title>
   <style>
-    :root{
-      --bg:#0f0f10; --card:#121214; --muted:#9aa0a6; --accent:#1db954; --glass: rgba(255,255,255,0.03);
-      --radius:18px; --gap:14px; --maxw:980px;
+    body {
+      background: #111;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
     }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial; background:linear-gradient(180deg,#080808 0%, #141414 100%); color:#e9eef1; display:flex; align-items:center; justify-content:center; min-height:100vh; padding:28px}
-    .wrap{width:100%; max-width:var(--maxw)}
-
-    header{display:flex;align-items:center;gap:18px;margin-bottom:22px}
-    .logo{display:flex;align-items:center;gap:12px}
-    .logo .mark{width:44px;height:44px;background:linear-gradient(135deg,var(--accent),#16a34a);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700}
-    .title{font-size:20px;font-weight:700}
-    .subtitle{color:var(--muted);font-size:13px}
-
-    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:var(--radius); padding:18px; box-shadow: 0 8px 30px rgba(0,0,0,0.6);}
-
-    .search-row{display:flex; gap:12px; align-items:center}
-    .search-row input{flex:1;padding:12px 14px;border-radius:999px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit;font-size:15px;outline:none}
-    .search-row button{padding:10px 16px;border-radius:999px;border:none;background:var(--accent);color:#04120b;font-weight:700;cursor:pointer}
-
-    .main{display:grid;grid-template-columns:360px 1fr;gap:18px;margin-top:18px}
-
-    .left{display:flex;flex-direction:column;gap:12px}
-    .results{display:flex;flex-direction:column;gap:10px;max-height:56vh;overflow:auto;padding-right:6px}
-    .result{display:flex;gap:12px;align-items:center;padding:8px;border-radius:12px;background:var(--glass);cursor:pointer;transition:transform .12s,background .12s}
-    .result:hover{transform:translateY(-3px);background:rgba(255,255,255,0.03)}
-    .thumb{width:64px;height:64px;border-radius:8px;flex-shrink:0;object-fit:cover}
-    .meta{display:flex;flex-direction:column}
-    .meta .t{font-weight:600}
-    .meta .s{color:var(--muted);font-size:13px;margin-top:6px}
-
-    .right{display:flex;flex-direction:column;gap:12px}
-    .player-card{display:flex;gap:14px;align-items:center;padding:20px;border-radius:14px;background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))}
-    .art{width:120px;height:120px;border-radius:12px;object-fit:cover;background:#111}
-    .player-info{flex:1}
-    .player-title{font-weight:700;font-size:18px}
-    .player-sub{color:var(--muted);margin-top:6px}
-
-    .controls{display:flex;align-items:center;gap:12px;margin-top:14px}
-    .controls button{background:transparent;border:none;color:inherit;padding:10px;border-radius:10px;cursor:pointer}
-    .big{font-size:20px;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,0.03)}
-
-    .progress{height:8px;background:rgba(255,255,255,0.04);border-radius:999px;margin-top:10px;overflow:hidden}
-    .progress > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#14b44b);width:0%}
-
-    .playlist{margin-top:10px;display:flex;flex-direction:column;gap:8px}
-    .muted-note{color:var(--muted);font-size:13px;margin-top:10px}
-
-    /* small screens */
-    @media (max-width:880px){.main{grid-template-columns:1fr;}.left{order:2}.right{order:1}.art{width:96px;height:96px}}
-
-    /* hide the hidden iframe visually but keep it in DOM for audio */
-    #youtube-player{position:absolute;left:-9999px;top:auto;width:1px;height:1px;opacity:0}
+    .player {
+      background: #222;
+      padding: 20px;
+      border-radius: 20px;
+      text-align: center;
+      box-shadow: 0 0 20px rgba(0,0,0,0.6);
+    }
+    button {
+      background: #1db954;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      margin: 10px;
+      border-radius: 30px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #17a74a;
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div class="logo">
-        <div class="mark">Y</div>
-        <div>
-          <div class="title">Yokata</div>
-          <div class="subtitle">Поиск и проигрывание музыки через YouTube — стиль Dotify</div>
-        </div>
-      </div>
-    </header>
-
-    <div class="card">
-      <div class="search-row">
-        <input id="q" placeholder="Искать: исполнитель — трек или название песни" />
-        <button id="btnSearch">🔎 Поиск</button>
-      </div>
-
-      <div class="main">
-        <div class="left">
-          <div class="results" id="results">Введите запрос и нажмите «Поиск»</div>
-        </div>
-
-        <div class="right">
-          <div class="player-card">
-            <img id="art" class="art" src="" alt="art" />
-            <div class="player-info">
-              <div id="title" class="player-title">Не играет</div>
-              <div id="channel" class="player-sub">—</div>
-              <div class="controls">
-                <button id="prevBtn" title="Prev">⏮</button>
-                <button id="playBtn" class="big" title="Play/Pause">▶</button>
-                <button id="nextBtn" title="Next">⏭</button>
-                <div style="flex:1"></div>
-                <button id="openOnYT" title="Открыть в YouTube">YouTube ↗</button>
-              </div>
-              <div class="progress" id="progress"><i style="width:0%"></i></div>
-              <div class="muted-note">Примечание: для автоматического проигрывания браузеры требуют взаимодействия пользователя.</div>
-            </div>
-          </div>
-
-          <div class="card" style="margin-top:12px;padding:12px;">
-            <div style="font-weight:700;margin-bottom:8px">Плейлист</div>
-            <div class="playlist" id="playlist">Плейлист пуст</div>
-          </div>
-        </div>
-      </div>
-
+  <div class="player">
+    <h2>🎵 Моя волна</h2>
+    <audio id="audio" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"></audio>
+    <div>
+      <button onclick="playAudio()">▶️ Play</button>
+      <button onclick="pauseAudio()">⏸ Pause</button>
     </div>
   </div>
 
-  <!-- Hidden YouTube player (YouTube IFrame API) -->
-  <div id="youtube-player"></div>
-
   <script>
-    // --- Настройки: вставь сюда свой API key ---
-    const API_KEY = 'AIzaSyC9DwHbf3l4nr6Q9xcof3tYi32GNncXBnE'; // <- заменить
-    // --- ---
+    const audio = document.getElementById("audio");
 
-    // UI refs
-    const q = document.getElementById('q');
-    const btnSearch = document.getElementById('btnSearch');
-    const results = document.getElementById('results');
-    const art = document.getElementById('art');
-    const titleEl = document.getElementById('title');
-    const channelEl = document.getElementById('channel');
-    const playBtn = document.getElementById('playBtn');
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-    const openOnYT = document.getElementById('openOnYT');
-    const playlistEl = document.getElementById('playlist');
-    const progressBar = document.querySelector('#progress > i');
-
-    let playlist = []; // {videoId, title, channelTitle, thumb}
-    let current = -1;
-    let ytPlayer = null;
-    let isPlaying = false;
-    let durationSec = 0;
-
-    // load YouTube IFrame API
-    (function loadYT(){
-      const s = document.createElement('script');
-      s.src = 'https://www.youtube.com/iframe_api';
-      document.head.appendChild(s);
-    })();
-
-    // API ready callback
-    function onYouTubeIframeAPIReady(){
-      ytPlayer = new YT.Player('youtube-player', {
-        height: '1', width: '1', videoId: '', playerVars: {
-          playsinline: 1, controls: 0, disablekb: 1, modestbranding: 1, rel: 0, fs: 0
-        },
-        events: {
-          onReady: onPlayerReady,
-          onStateChange: onPlayerStateChange
-        }
-      });
+    function playAudio() {
+      audio.play();
     }
-
-    function onPlayerReady(){
-      console.log('YT ready');
+    function pauseAudio() {
+      audio.pause();
     }
-
-    function onPlayerStateChange(e){
-      // YT states: -1 unstarted, 0 ended, 1 playing, 2 paused
-      if(e.data === YT.PlayerState.ENDED){ nextTrack(); }
-      if(e.data === YT.PlayerState.PLAYING){ isPlaying = true; playBtn.innerText = '⏸'; startProgressUpdater(); }
-      if(e.data === YT.PlayerState.PAUSED){ isPlaying = false; playBtn.innerText = '▶'; }
-    }
-
-    // Progress updater: query player for currentTime/duration
-    let progressTimer = null;
-    function startProgressUpdater(){
-      clearInterval(progressTimer);
-      progressTimer = setInterval(async ()=>{
-        try{
-          if(ytPlayer && isPlaying){
-            const pos = ytPlayer.getCurrentTime();
-            const dur = ytPlayer.getDuration() || durationSec || 1;
-            const pct = Math.min(100, Math.round((pos/dur)*100));
-            progressBar.style.width = pct + '%';
-          }
-        }catch(err){/* ignore */}
-      }, 500);
-    }
-
-    // Search
-    async function search(query){
-      if(!query) return;
-      results.innerHTML = '<div style="color:var(--muted)">Ищем...</div>';
-      try{
-        const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=10&q=${encodeURIComponent(query)}&key=${API_KEY}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        if(!data.items || data.items.length===0){ results.innerHTML = '<div style="color:var(--muted)">❌ Ничего не найдено</div>'; return; }
-
-        playlist = data.items.map(it=>({
-          videoId: it.id.videoId,
-          title: it.snippet.title,
-          channelTitle: it.snippet.channelTitle,
-          thumb: it.snippet.thumbnails?.medium?.url || it.snippet.thumbnails?.default?.url
-        }));
-
-        renderResults();
-        renderPlaylist();
-        // auto-play first result only after user interaction
-        // we'll not auto-play to avoid autoplay blocks
-      }catch(err){
-        console.error(err);
-        results.innerHTML = '<div style="color:var(--muted)">Ошибка поиска</div>';
-      }
-    }
-
-    function renderResults(){
-      results.innerHTML = '';
-      playlist.forEach((t, idx)=>{
-        const div = document.createElement('div');
-        div.className = 'result';
-        div.innerHTML = `<img class="thumb" src="${t.thumb}"><div class="meta"><div class="t">${escapeHtml(t.title)}</div><div class="s">${escapeHtml(t.channelTitle)}</div></div>`;
-        div.onclick = ()=>{ playIndex(idx); }
-        results.appendChild(div);
-      });
-    }
-
-    function renderPlaylist(){
-      playlistEl.innerHTML = '';
-      if(playlist.length===0){ playlistEl.innerText = 'Плейлист пуст'; return; }
-      playlist.forEach((t, idx)=>{
-        const el = document.createElement('div');
-        el.style.display = 'flex'; el.style.alignItems='center'; el.style.justifyContent='space-between'; el.style.gap='8px';
-        el.style.padding='8px'; el.style.borderRadius='8px'; el.style.background='rgba(255,255,255,0.02)';
-        el.innerHTML = `<div style="display:flex;gap:10px;align-items:center"><img src="${t.thumb}" style="width:40px;height:40px;border-radius:6px;object-fit:cover"><div><div style="font-weight:600">${escapeHtml(t.title)}</div><div style="color:var(--muted);font-size:13px">${escapeHtml(t.channelTitle)}</div></div></div><div><button onclick="playIndex(${idx})">▶</button></div>`;
-        playlistEl.appendChild(el);
-      });
-    }
-
-    // Play functions
-    function playIndex(i){
-      if(i<0 || i>=playlist.length) return;
-      current = i;
-      const item = playlist[i];
-      titleEl.innerText = item.title;
-      channelEl.innerText = item.channelTitle;
-      art.src = item.thumb;
-      openOnYT.onclick = ()=>{ window.open('https://www.youtube.com/watch?v=' + item.videoId, '_blank'); }
-
-      // load and play with YT player
-      if(ytPlayer){
-        try{
-          ytPlayer.loadVideoById(item.videoId);
-          // ensure play is triggered after user click — browsers may block autoplay
-          ytPlayer.playVideo();
-        }catch(err){
-          console.error('YT play error', err);
-        }
-      }
-
-      renderPlaylist();
-    }
-
-    function nextTrack(){
-      if(playlist.length===0) return;
-      current = (current + 1) % playlist.length;
-      playIndex(current);
-    }
-    function prevTrack(){
-      if(playlist.length===0) return;
-      current = (current - 1 + playlist.length) % playlist.length;
-      playIndex(current);
-    }
-
-    // Buttons
-    btnSearch.addEventListener('click', ()=>{ search(q.value.trim()); });
-    q.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ search(q.value.trim()); } });
-
-    playBtn.addEventListener('click', ()=>{
-      if(!ytPlayer) return;
-      const state = ytPlayer.getPlayerState ? ytPlayer.getPlayerState() : -1;
-      if(state === YT.PlayerState.PLAYING){ ytPlayer.pauseVideo(); }
-      else { ytPlayer.playVideo(); }
-    });
-    nextBtn.addEventListener('click', nextTrack);
-    prevBtn.addEventListener('click', prevTrack);
-
-    // small helper
-    function escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-    // initial note
-    // security: recommend restricting API key to your domain in Google Cloud Console
-
   </script>
 </body>
 </html>
