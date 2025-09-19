@@ -1,9 +1,9 @@
-name: Deploy to GitHub Pages
+name: Deploy static site to GitHub Pages
 
 on:
   push:
     branches:
-      - main   # деплой из ветки main, поменяй если нужно
+      - main   # или master, если у тебя другая ветка
 
 permissions:
   contents: read
@@ -12,40 +12,23 @@ permissions:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: false   # чтобы не отменяло предыдущие билды
+  cancel-in-progress: false
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      # если у тебя просто html/css/js сайт, это можно удалить
-      # если у тебя есть package.json — оставляй
-      - name: Install dependencies
-        run: npm install || true
-
-      - name: Build project
-        run: npm run build || echo "no build step"
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./dist  # если у тебя билд в dist; если чистый сайт — ./ 
-
   deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    needs: build
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./   # корень репы (если index.html лежит там)
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
