@@ -1,121 +1,123 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Yokata Player MiniApp</title>
+  <title>Yokata Spotify MiniApp</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     body {
-      margin: 0;
-      background: #121212;
+      background: #111;
       color: #fff;
       font-family: Arial, sans-serif;
+      padding: 20px;
     }
-
-    header {
-      padding: 15px;
-      text-align: center;
-      background: #181818;
-      font-size: 20px;
-      font-weight: bold;
-      color: #1db954;
-    }
-
-    .container {
+    h1 { text-align: center; color: #1db954; }
+    .search-box {
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 20px;
+      justify-content: center;
+      margin-bottom: 15px;
     }
-
-    .track-card {
-      background: #181818;
-      border-radius: 15px;
-      padding: 20px;
-      margin: 20px 0;
-      text-align: center;
-      width: 100%;
-      max-width: 400px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    input {
+      width: 70%;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      outline: none;
     }
-
-    .track-cover {
-      width: 100%;
-      border-radius: 10px;
-    }
-
-    .track-title {
-      margin: 15px 0 5px;
-      font-size: 18px;
-      font-weight: bold;
-    }
-
-    .track-artist {
-      font-size: 14px;
-      color: #bbb;
-    }
-
-    .controls {
-      margin-top: 15px;
-    }
-
-    .btn {
+    button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 8px;
       background: #1db954;
       color: white;
-      padding: 10px 20px;
-      margin: 0 5px;
-      border-radius: 30px;
-      border: none;
-      font-size: 16px;
       cursor: pointer;
-      transition: 0.2s;
+      margin-left: 5px;
     }
-
-    .btn:hover {
-      background: #1ed760;
+    .results { margin-top: 20px; }
+    .track {
+      background: #222;
+      margin: 10px 0;
+      padding: 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.3s;
     }
-
-    audio {
-      display: none;
+    .track:hover { background: #333; }
+    iframe {
+      width: 100%;
+      height: 160px;
+      border-radius: 10px;
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
-  <header>🎶 Yokata Player</header>
-
-  <div class="container">
-    <div class="track-card">
-      <img src="https://i.scdn.co/image/ab67616d0000b2733a06c2e3c3f6a2f20d3f4f3d" alt="cover" class="track-cover">
-      <div class="track-title">SoundHelix Song 1</div>
-      <div class="track-artist">Demo Artist</div>
-
-      <div class="controls">
-        <button class="btn" onclick="playTrack()">▶️ Play</button>
-        <button class="btn" onclick="pauseTrack()">⏸ Pause</button>
-      </div>
-
-      <audio id="player">
-        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
-      </audio>
-    </div>
+  <h1>🎵 Yokata Spotify</h1>
+  <div class="search-box">
+    <input id="search" placeholder="Введите название трека...">
+    <button onclick="searchTracks()">Поиск</button>
   </div>
+  <div class="results" id="results"></div>
+  <div id="player"></div>
 
   <script>
-    // Telegram API
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    const player = document.getElementById("player");
+    const clientId = "7aa95becdffa44d7a79bcc5e7c933450";
+    const clientSecret = "89194904474847c08fee37b8c3615689";
 
-    function playTrack() {
-      player.play()
-        .then(() => console.log("▶️ Трек играет"))
-        .catch(err => console.log("Ошибка:", err));
+    async function getToken() {
+      const result = await fetch("https://accounts.spotify.com/api/token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Authorization": "Basic " + btoa(clientId + ":" + clientSecret)
+        },
+        body: "grant_type=client_credentials"
+      });
+      const data = await result.json();
+      return data.access_token;
     }
 
-    function pauseTrack() {
-      player.pause();
+    async function searchTracks() {
+      const query = document.getElementById("search").value;
+      if (!query) return;
+
+      const token = await getToken();
+      const result = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=5`, {
+        method: "GET",
+        headers: { "Authorization": "Bearer " + token }
+      });
+      const data = await result.json();
+
+      const resultsDiv = document.getElementById("results");
+      resultsDiv.innerHTML = "";
+
+      if (!data.tracks.items.length) {
+        resultsDiv.innerHTML = "<p>❌ Треки не найдены</p>";
+        return;
+      }
+
+      data.tracks.items.forEach(track => {
+        const div = document.createElement("div");
+        div.className = "track";
+        div.innerText = `${track.artists[0].name} - ${track.name}`;
+        div.onclick = () => playTrack(track.uri);
+        resultsDiv.appendChild(div);
+      });
+    }
+
+    function playTrack(uri) {
+      const playerDiv = document.getElementById("player");
+      playerDiv.innerHTML = `
+        <iframe style="border-radius:12px"
+          src="https://open.spotify.com/embed/track/${uri.split(":")[2]}?utm_source=generator&theme=0"
+          width="100%" height="152" frameBorder="0" allowfullscreen=""
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy">
+        </iframe>
+      `;
     }
   </script>
 </body>
