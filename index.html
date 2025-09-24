@@ -12,10 +12,8 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: flex-start;
-        height: 100vh;
-        margin: 0;
         padding: 20px;
+        margin: 0;
     }
     h1 { margin-bottom: 20px; }
     input {
@@ -41,13 +39,8 @@
         border-radius: 5px;
         margin-right: 10px;
     }
-    .track-info {
-        flex: 1;
-    }
-    .track-info p {
-        margin: 0;
-        font-size: 14px;
-    }
+    .track-info { flex: 1; }
+    .track-info p { margin: 0; font-size: 14px; }
     .play-btn {
         background: #ff5500;
         border: none;
@@ -72,8 +65,7 @@
 <div id="results"></div>
 
 <script>
-const CLIENT_ID = 'f4otHfN28iRocvtsC06wa7laoabVwzFg'; // вставь свой SoundCloud client_id
-
+const PROXY_URL = 'https://твоя-прокси.herokuapp.com/search'; // вставь сюда URL своего прокси
 const searchInput = document.getElementById('search');
 const resultsDiv = document.getElementById('results');
 let currentAudio = null;
@@ -87,7 +79,7 @@ searchInput.addEventListener('keypress', function(e) {
 async function searchTracks(query) {
     resultsDiv.innerHTML = 'Loading...';
     try {
-        const res = await fetch(`https://api.soundcloud.com/tracks?client_id=${CLIENT_ID}&q=${encodeURIComponent(query)}&limit=10`);
+        const res = await fetch(`${PROXY_URL}?q=${encodeURIComponent(query)}`);
         const tracks = await res.json();
         displayTracks(tracks);
     } catch (err) {
@@ -122,7 +114,7 @@ function displayTracks(tracks) {
                 currentAudio.pause();
                 currentAudio = null;
             }
-            currentAudio = new Audio(track.stream_url + `?client_id=${CLIENT_ID}`);
+            currentAudio = new Audio(track.stream_url + `?client_id=PLACEHOLDER`);
             currentAudio.play();
         });
         
