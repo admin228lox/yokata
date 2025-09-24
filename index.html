@@ -1,3 +1,49 @@
+import express from "express";
+import fetch from "node-fetch";
+
+const app = express();
+
+// Spotify ключи (секрет не уходит во фронт!)
+const clientId = "7aa95becdffa44d7a79bcc5e7c933450";
+const clientSecret = "89194904474847c08fee37b8c3615689";
+
+let accessToken = null;
+let tokenExpires = 0;
+
+async function getToken() {
+  if (Date.now() < tokenExpires && accessToken) return accessToken;
+
+  const res = await fetch("https://accounts.spotify.com/api/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Authorization": "Basic " + Buffer.from(clientId + ":" + clientSecret).toString("base64")
+    },
+    body: "grant_type=client_credentials"
+  });
+
+  const data = await res.json();
+  accessToken = data.access_token;
+  tokenExpires = Date.now() + data.expires_in * 1000;
+  return accessToken;
+}
+
+// API поиск
+app.get("/search", async (req, res) => {
+  const q = req.query.q;
+  if (!q) return res.json({ error: "no query" });
+
+  const token = await getToken();
+  const result = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=track&limit=5`, {
+    headers: { Authorization: "Bearer " + token }
+  });
+  const data = await result.json();
+  res.json(data);
+});
+
+// HTML Mini App
+app.get("/", (req, res) => {
+  res.send(`
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -65,37 +111,17 @@
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    const clientId = "7aa95becdffa44d7a79bcc5e7c933450";
-    const clientSecret = "89194904474847c08fee37b8c3615689";
-
-    async function getToken() {
-      const result = await fetch("https://accounts.spotify.com/api/token", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          "Authorization": "Basic " + btoa(clientId + ":" + clientSecret)
-        },
-        body: "grant_type=client_credentials"
-      });
-      const data = await result.json();
-      return data.access_token;
-    }
-
     async function searchTracks() {
       const query = document.getElementById("search").value;
       if (!query) return;
 
-      const token = await getToken();
-      const result = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=5`, {
-        method: "GET",
-        headers: { "Authorization": "Bearer " + token }
-      });
+      const result = await fetch(\`/search?q=\${encodeURIComponent(query)}\`);
       const data = await result.json();
 
       const resultsDiv = document.getElementById("results");
       resultsDiv.innerHTML = "";
 
-      if (!data.tracks.items.length) {
+      if (!data.tracks?.items?.length) {
         resultsDiv.innerHTML = "<p>❌ Треки не найдены</p>";
         return;
       }
@@ -103,7 +129,7 @@
       data.tracks.items.forEach(track => {
         const div = document.createElement("div");
         div.className = "track";
-        div.innerText = `${track.artists[0].name} - ${track.name}`;
+        div.innerText = \`\${track.artists[0].name} - \${track.name}\`;
         div.onclick = () => playTrack(track.uri);
         resultsDiv.appendChild(div);
       });
@@ -111,14 +137,18 @@
 
     function playTrack(uri) {
       const playerDiv = document.getElementById("player");
-      playerDiv.innerHTML = `
+      playerDiv.innerHTML = \`
         <iframe style="border-radius:12px"
-          src="https://open.spotify.com/embed/track/${uri.split(":")[2]}?utm_source=generator&theme=0"
+          src="https://open.spotify.com/embed/track/\${uri.split(":")[2]}?utm_source=generator&theme=0"
           width="100%" height="152" frameBorder="0" allowfullscreen=""
           allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy">
         </iframe>
-      `;
+      \`;
     }
   </script>
 </body>
 </html>
+  `);
+});
+
+app.listen(3000, () => console.log("🚀 MiniApp running on http://localhost:3000"));
