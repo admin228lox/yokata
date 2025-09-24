@@ -3,7 +3,7 @@ import fetch from "node-fetch";
 
 const app = express();
 
-// Spotify ключи (секрет не уходит во фронт!)
+// Spotify секреты (хранятся только здесь, не уходят во фронт!)
 const clientId = "f4otHfN28iRocvtsC06wa7laoabVwzFg";
 const clientSecret = "BL7DdQwz21eoceIKf2H6j0JZ5qJFVCWL";
 
@@ -28,7 +28,7 @@ async function getToken() {
   return accessToken;
 }
 
-// API поиск
+// API для поиска треков
 app.get("/search", async (req, res) => {
   const q = req.query.q;
   if (!q) return res.json({ error: "no query" });
@@ -41,7 +41,7 @@ app.get("/search", async (req, res) => {
   res.json(data);
 });
 
-// HTML Mini App
+// HTML MiniApp
 app.get("/", (req, res) => {
   res.send(`
 <!DOCTYPE html>
