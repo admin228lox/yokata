@@ -1,131 +1,124 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dotify Mini App</title>
-<style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yokata Spotify MiniApp</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
     body {
-        font-family: Arial, sans-serif;
-        background: #121212;
-        color: #fff;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 20px;
-        margin: 0;
+      background: #111;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      padding: 20px;
     }
-    h1 { margin-bottom: 20px; }
+    h1 { text-align: center; color: #1db954; }
+    .search-box {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 15px;
+    }
     input {
-        padding: 10px;
-        width: 300px;
-        border-radius: 25px;
-        border: none;
-        margin-bottom: 20px;
-        outline: none;
+      width: 70%;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      outline: none;
     }
+    button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 8px;
+      background: #1db954;
+      color: white;
+      cursor: pointer;
+      margin-left: 5px;
+    }
+    .results { margin-top: 20px; }
     .track {
-        display: flex;
-        align-items: center;
-        background: #1e1e1e;
-        padding: 10px;
-        margin-bottom: 10px;
-        border-radius: 10px;
-        width: 350px;
+      background: #222;
+      margin: 10px 0;
+      padding: 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.3s;
     }
-    .track img {
-        width: 50px;
-        height: 50px;
-        border-radius: 5px;
-        margin-right: 10px;
+    .track:hover { background: #333; }
+    iframe {
+      width: 100%;
+      height: 160px;
+      border-radius: 10px;
+      margin-top: 20px;
     }
-    .track-info { flex: 1; }
-    .track-info p { margin: 0; font-size: 14px; }
-    .play-btn {
-        background: #ff5500;
-        border: none;
-        color: #fff;
-        padding: 8px 12px;
-        border-radius: 50%;
-        cursor: pointer;
-        font-weight: bold;
-    }
-    audio {
-        width: 100%;
-        margin-top: 10px;
-        outline: none;
-    }
-</style>
+  </style>
 </head>
 <body>
+  <h1>🎵 Yokata Spotify</h1>
+  <div class="search-box">
+    <input id="search" placeholder="Введите название трека...">
+    <button onclick="searchTracks()">Поиск</button>
+  </div>
+  <div class="results" id="results"></div>
+  <div id="player"></div>
 
-<h1>Dotify Mini App</h1>
-<input type="text" id="search" placeholder="Search SoundCloud tracks..." />
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
 
-<div id="results"></div>
+    const clientId = "7aa95becdffa44d7a79bcc5e7c933450";
+    const clientSecret = "89194904474847c08fee37b8c3615689";
 
-<script>
-const PROXY_URL = 'https://yokata-iylm29hh0-laks-projects-03929573.vercel.app/api/search';
-const searchInput = document.getElementById('search');
-const resultsDiv = document.getElementById('results');
-let currentAudio = null;
-
-searchInput.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        searchTracks(this.value);
+    async function getToken() {
+      const result = await fetch("https://accounts.spotify.com/api/token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Authorization": "Basic " + btoa(clientId + ":" + clientSecret)
+        },
+        body: "grant_type=client_credentials"
+      });
+      const data = await result.json();
+      return data.access_token;
     }
-});
 
-async function searchTracks(query) {
-    resultsDiv.innerHTML = 'Loading...';
-    try {
-        const res = await fetch(`${PROXY_URL}?q=${encodeURIComponent(query)}`);
-        const tracks = await res.json();
-        displayTracks(tracks);
-    } catch (err) {
-        resultsDiv.innerHTML = 'Error loading tracks';
-        console.error(err);
+    async function searchTracks() {
+      const query = document.getElementById("search").value;
+      if (!query) return;
+
+      const token = await getToken();
+      const result = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=5`, {
+        method: "GET",
+        headers: { "Authorization": "Bearer " + token }
+      });
+      const data = await result.json();
+
+      const resultsDiv = document.getElementById("results");
+      resultsDiv.innerHTML = "";
+
+      if (!data.tracks.items.length) {
+        resultsDiv.innerHTML = "<p>❌ Треки не найдены</p>";
+        return;
+      }
+
+      data.tracks.items.forEach(track => {
+        const div = document.createElement("div");
+        div.className = "track";
+        div.innerText = ${track.artists[0].name} - ${track.name};
+        div.onclick = () => playTrack(track.uri);
+        resultsDiv.appendChild(div);
+      });
     }
-}
 
-function displayTracks(tracks) {
-    resultsDiv.innerHTML = '';
-    tracks.forEach(track => {
-        const trackDiv = document.createElement('div');
-        trackDiv.className = 'track';
-        
-        const img = document.createElement('img');
-        img.src = track.artwork_url ? track.artwork_url.replace('-large', '-t500x500') : 'https://via.placeholder.com/50';
-        
-        const info = document.createElement('div');
-        info.className = 'track-info';
-        const title = document.createElement('p');
-        title.textContent = track.title;
-        const artist = document.createElement('p');
-        artist.textContent = track.user.username;
-        info.appendChild(title);
-        info.appendChild(artist);
-        
-        const btn = document.createElement('button');
-        btn.className = 'play-btn';
-        btn.textContent = '▶';
-        btn.addEventListener('click', () => {
-            if (currentAudio) {
-                currentAudio.pause();
-                currentAudio = null;
-            }
-            currentAudio = new Audio(track.stream_url + `?client_id=PLACEHOLDER`);
-            currentAudio.play();
-        });
-        
-        trackDiv.appendChild(img);
-        trackDiv.appendChild(info);
-        trackDiv.appendChild(btn);
-        
-        resultsDiv.appendChild(trackDiv);
-    });
-}
-</script>
-
+    function playTrack(uri) {
+      const playerDiv = document.getElementById("player");
+      playerDiv.innerHTML = `
+        <iframe style="border-radius:12px"
+          src="https://open.spotify.com/embed/track/${uri.split(":")[2]}?utm_source=generator&theme=0"
+          width="100%" height="152" frameBorder="0" allowfullscreen=""
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy">
+        </iframe>
+      `;
+    }
+  </script>
 </body>
 </html>
