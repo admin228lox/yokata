@@ -72,9 +72,11 @@
 
         const clientId = "7aa95becdffa44d7a79bcc5e7c933450";
         const clientSecret = "89194904474847c08fee37b8c3615689";
+        const CORS_PROXY = "https://corsproxy.io/?";
 
         async function getToken() {
-            const result = await fetch("https://accounts.spotify.com/api/token", {
+            const tokenUrl = encodeURIComponent("https://accounts.spotify.com/api/token");
+            const result = await fetch(CORS_PROXY + tokenUrl, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded",
@@ -91,7 +93,8 @@
             if (!query) return;
 
             const token = await getToken();
-            const result = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=5`, {
+            const searchUrl = encodeURIComponent(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=5`);
+            const result = await fetch(CORS_PROXY + searchUrl, {
                 method: "GET",
                 headers: { "Authorization": "Bearer " + token }
             });
